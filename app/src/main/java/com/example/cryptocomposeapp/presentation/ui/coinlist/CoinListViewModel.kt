@@ -9,13 +9,14 @@ import androidx.lifecycle.viewModelScope
 import com.example.cryptocomposeapp.common.Resource
 import com.example.cryptocomposeapp.domain.model.Coin
 import com.example.cryptocomposeapp.domain.usecase.GetCoinsUseCase
+import com.example.cryptocomposeapp.domain.usecase.SearchCoinUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import javax.inject.Inject
 
 @HiltViewModel
-class CoinListViewModel @Inject constructor(val useCase: GetCoinsUseCase): ViewModel() {
+class CoinListViewModel @Inject constructor(val useCase: GetCoinsUseCase, val searchCoinUseCase: SearchCoinUseCase): ViewModel() {
 
     private val _state = mutableStateOf(CoinListState())
     val state: State<CoinListState> = _state
@@ -44,9 +45,9 @@ class CoinListViewModel @Inject constructor(val useCase: GetCoinsUseCase): ViewM
                 is Resource.Loading ->  _state.value = CoinListState(isLoading = true)
                 is Resource.Success -> {
                     _state.value = CoinListState(success = result.data ?: emptyList())
-                    filteredList.addAll(result.data?.toMutableList()!!)
-                    holderList.addAll(result.data.toMutableList())
-                    _coinList.value = result.data.toMutableList()
+                    filteredList.addAll(result.data?.toMutableList() ?: emptyList())
+                    holderList.addAll(result.data?.toMutableList() ?: emptyList())
+                    _coinList.value = result.data?.toMutableList() ?: mutableListOf()
                 }
             }
         }.launchIn(viewModelScope)
@@ -59,7 +60,7 @@ class CoinListViewModel @Inject constructor(val useCase: GetCoinsUseCase): ViewM
             _isHintVisible.value = true
         } else {
             _isHintVisible.value = false
-            _coinList.value = filteredList.filter { it.name.contains(value.text, true) || it.symbol.contains(value.text, true) }.toMutableList()
+            _coinList.value = searchCoinUseCase(filteredList, value.text)
         }
     }
 }
